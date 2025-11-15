@@ -1,0 +1,19 @@
+{
+  "name": "chess-news-scraper",
+  "version": "1.0.0",
+  "description": "Twitter scraper for chess news from ChessbaseIndia, Chess.com, and Chess24",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.6.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5"
+  }
+}
