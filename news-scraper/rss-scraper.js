@@ -127,13 +127,12 @@ async function scrapeChessBase() {
 }
 
 /**
- * Scrape Chess24 news
+ * Scrape Lichess Blog
  */
-async function scrapeChess24() {
-  console.log('\n🔍 Scraping Chess24...');
-  
+async function scrapeLichess() {
   try {
-    const response = await axios.get('https://chess24.com/en/read/news', {
+    console.log('\n🔍 Scraping Lichess Blog...');
+    const response = await axios.get('https://lichess.org/blog', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       },
@@ -143,16 +142,15 @@ async function scrapeChess24() {
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    // Chess24 news items
-    $('.article-preview, .news-item').each((i, element) => {
+    $('.ublog-post-card').each((i, element) => {
       if (i >= config.scraping.maxTweetsPerAccount) return false;
 
       try {
-        const title = $(element).find('h2, h3, .title').text().trim();
-        const href = $(element).find('a').attr('href');
-        const link = href ? (href.startsWith('http') ? href : `https://chess24.com${href}`) : '';
+        const title = $(element).find('.ublog-post-card__title').text().trim();
+        const href = $(element).attr('href'); // The card itself is an <a> tag
+        const link = href ? `https://lichess.org${href}` : '';
         const imageUrl = $(element).find('img').attr('src');
-        const excerpt = $(element).find('.excerpt, p').first().text().trim();
+        const excerpt = $(element).find('.ublog-post-card__intro').text().trim();
 
         if (title && link) {
           articles.push({
@@ -160,8 +158,8 @@ async function scrapeChess24() {
             content: excerpt || title,
             link,
             image_url: imageUrl || null,
-            source: 'blog', // Must match DB constraint
-            source_website: 'Chess24',
+            source: 'blog',
+            source_website: 'Lichess',
             published_at: new Date().toISOString(),
           });
         }
@@ -170,10 +168,60 @@ async function scrapeChess24() {
       }
     });
 
-    console.log(`✅ Found ${articles.length} articles from Chess24`);
+    console.log(`✅ Found ${articles.length} articles from Lichess`);
     return articles;
   } catch (error) {
-    console.error(`❌ Error scraping Chess24:`, error.message);
+    console.error(`❌ Error scraping Lichess:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Scrape FIDE News
+ */
+async function scrapeFIDE() {
+  try {
+    console.log('\n🔍 Scraping FIDE News...');
+    const response = await axios.get('https://www.fide.com/news', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+      timeout: 30000,
+    });
+
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $('.post').each((i, element) => {
+      if (i >= config.scraping.maxTweetsPerAccount) return false;
+
+      try {
+        const title = $(element).find('h3').text().trim();
+        const href = $(element).find('a').first().attr('href');
+        const link = href || '';
+        const imageUrl = $(element).find('img').first().attr('src');
+        const excerpt = $(element).find('p').first().text().trim();
+
+        if (title && link) {
+          articles.push({
+            title,
+            content: excerpt || title,
+            link,
+            image_url: imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `https://www.fide.com${imageUrl}`) : null,
+            source: 'official',
+            source_website: 'FIDE',
+            published_at: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing article:', error.message);
+      }
+    });
+
+    console.log(`✅ Found ${articles.length} articles from FIDE`);
+    return articles;
+  } catch (error) {
+    console.error(`❌ Error scraping FIDE:`, error.message);
     return [];
   }
 }
@@ -181,25 +229,22 @@ async function scrapeChess24() {
 /**
  * Scrape all news sources
  */
-export async function scrapeAllAccounts() {
+export async function scrapeAllNews() {
   console.log('🚀 Starting news scrape...');
-  
   const allArticles = [];
-  
-  // Scrape each source
-  const chessCom = await scrapeChessCom();
-  allArticles.push(...chessCom);
-  
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Delay between requests
-  
-  const chessBase = await scrapeChessBase();
-  allArticles.push(...chessBase);
-  
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  const chess24 = await scrapeChess24();
-  allArticles.push(...chess24);
-  
+
+  // Scrape Chess.com
+  const chessComArticles = await scrapeChessCom();
+  allArticles.push(...chessComArticles);
+
+  // Scrape ChessBase
+  const chessBaseArticles = await scrapeChessBase();
+  allArticles.push(...chessBaseArticles);
+
+  // Scrape FIDE
+  const fideArticles = await scrapeFIDE();
+  allArticles.push(...fideArticles);
+
   console.log(`\n📊 Total articles scraped: ${allArticles.length}`);
   return allArticles;
 }
