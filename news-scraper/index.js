@@ -1,4 +1,4 @@
-import { scrapeAllAccounts } from './twitter-scraper.js';
+import { scrapeAllNews } from './rss-scraper.js';
 import { upsertNewsPost, postExists } from './supabase-client.js';
 import { config } from './config.js';
 
@@ -12,8 +12,8 @@ async function scrapeAndUpload() {
   console.log(`⏰ ${new Date().toLocaleString()}\n`);
 
   try {
-    // Scrape all accounts
-    const posts = await scrapeAllAccounts();
+    // Scrape all news sources
+    const posts = await scrapeAllNews();
 
     if (posts.length === 0) {
       console.log('⚠️  No posts found to upload');
