@@ -54,7 +54,7 @@ async function scrapeChessCom() {
             content: excerpt || title,
             link,
             image_url: imageUrl || null,
-            source: 'blog', // Must match DB constraint
+            source: 'Chess.com',
             source_website: 'Chess.com',
             published_at: new Date().toISOString(),
           });
@@ -108,7 +108,7 @@ async function scrapeChessBase() {
             content: excerpt || title,
             link,
             image_url: imageUrl ? `https://en.chessbase.com${imageUrl}` : null,
-            source: 'blog', // Must match DB constraint
+            source: 'ChessBase',
             source_website: 'ChessBase',
             published_at: new Date().toISOString(),
           });
@@ -158,7 +158,7 @@ async function scrapeLichess() {
             content: excerpt || title,
             link,
             image_url: imageUrl || null,
-            source: 'blog',
+            source: 'Lichess',
             source_website: 'Lichess',
             published_at: new Date().toISOString(),
           });
@@ -205,10 +205,10 @@ async function scrapeFIDE() {
         if (title && link) {
           articles.push({
             title,
-            content: excerpt || title,
+            content: title,
             link,
             image_url: imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `https://www.fide.com${imageUrl}`) : null,
-            source: 'official',
+            source: 'FIDE',
             source_website: 'FIDE',
             published_at: new Date().toISOString(),
           });
