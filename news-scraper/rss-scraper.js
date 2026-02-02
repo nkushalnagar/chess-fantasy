@@ -73,6 +73,36 @@ async function scrapeChessCom() {
 }
 
 /**
+ * Check if a ChessBase title is educational content (should be filtered out)
+ */
+function isEducationalPost(title) {
+  const educationalKeywords = [
+    'ChessBase',
+    'Guide',
+    'Repertoire',
+    'CBM',
+    // Chess move notation patterns
+    /\be[2-8]\b/i,  // e4, e5, etc.
+    /\bc[2-8]\b/i,  // c4, c5, etc.
+    /\bd[2-8]\b/i,  // d4, d5, etc.
+    /\bf[2-8]\b/i,  // f4, f5, etc.
+    /\bg[2-8]\b/i,  // g4, g5, etc.
+    /\bh[2-8]\b/i,  // h4, h5, etc.
+    /\ba[2-8]\b/i,  // a4, a5, etc.
+    /\bb[2-8]\b/i,  // b4, b5, etc.
+    /\bNf[2-8]\b/i, // Nf3, etc.
+    /\bNc[2-8]\b/i, // Nc3, etc.
+  ];
+
+  return educationalKeywords.some(keyword => {
+    if (keyword instanceof RegExp) {
+      return keyword.test(title);
+    }
+    return title.includes(keyword);
+  });
+}
+
+/**
  * Scrape ChessBase news
  */
 async function scrapeChessBase() {
@@ -88,10 +118,11 @@ async function scrapeChessBase() {
 
     const $ = cheerio.load(response.data);
     const articles = [];
+    let filteredCount = 0;
 
     // ChessBase news articles - use .blog-news class
     $('.blog-news').each((i, element) => {
-      if (i >= config.scraping.maxTweetsPerAccount) return false;
+      if (articles.length >= config.scraping.maxTweetsPerAccount) return false;
 
       try {
         // Title is in h1 > a
@@ -103,6 +134,13 @@ async function scrapeChessBase() {
         const excerpt = $(element).find('.blog-header').text().replace(title, '').trim().substring(0, 200);
 
         if (title && link) {
+          // Filter out educational posts
+          if (isEducationalPost(title)) {
+            filteredCount++;
+            console.log(`🚫 Filtered educational post: ${title}`);
+            return;
+          }
+
           articles.push({
             title,
             content: excerpt || title,
@@ -118,7 +156,7 @@ async function scrapeChessBase() {
       }
     });
 
-    console.log(`✅ Found ${articles.length} articles from ChessBase`);
+    console.log(`✅ Found ${articles.length} articles from ChessBase (filtered ${filteredCount} educational posts)`);
     return articles;
   } catch (error) {
     console.error(`❌ Error scraping ChessBase:`, error.message);
